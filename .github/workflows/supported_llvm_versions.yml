@@ -64,6 +64,7 @@ jobs:
     env:
       # silence `ld: warning: object file (…) was built for newer macOS version (…) than being linked (…)`
       MACOSX_DEPLOYMENT_TARGET: ${{ matrix.os == 'macos-14' && '13.6' || '11.6' }}
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
     steps:
       - uses: actions/checkout@v4
         with:
@@ -78,6 +79,12 @@ jobs:
           compiler: ${{ matrix.host_dc }}
       - name: Clear LD_LIBRARY_PATH to prevent loading host compiler libs
         run: echo "LD_LIBRARY_PATH=" >> $GITHUB_ENV
+      - name: Setup cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ matrix.os }}-${{ matrix.llvm_version }}-${{ matrix.host_dc }}-${{ github.sha }}
+          restore-keys: ${{ matrix.os }}-${{ matrix.llvm_version }}-${{ matrix.host_dc }}-
       - name: Install lit
         if: runner.os != 'Linux'
         run: |
@@ -89,9 +96,12 @@ jobs:
             python3 -m pip install --user lit
           fi
           python3 -c "import lit.main; lit.main.main();" --version . | head -n 1
+      - name: Install ccache
+        if: runner.os == 'macOS'
+        run: brew install ccache
       - name: Try to restore cached LLVM
         if: runner.os != 'Linux'
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: llvm
           key: llvm-${{ matrix.llvm_version }}-${{ runner.os }}
@@ -150,6 +160,8 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DLLVM_ROOT_DIR="${LLVM_ROOT_DIR}" \
             -DLDC_LINK_MANUALLY=OFF \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             ${{ matrix.cmake_flags }}
           ninja obj/ldc2.o all ldc2-unittest all-test-runners
           bin/ldc2 --version
