@@ -40,6 +40,7 @@ version (MIPS32)  version = MIPS_Any;
 version (MIPS64)  version = MIPS_Any;
 version (RISCV32) version = RISCV_Any;
 version (RISCV64) version = RISCV_Any;
+version (SystemZ) version = IBMZ_Any;
 
 // debug = PRINTF;
 import core.internal.elf.dl;
@@ -1182,6 +1183,27 @@ version (LDC)
         extern(C) void* ___tls_get_addr(tls_index* ti) nothrow @nogc;
         alias __tls_get_addr = ___tls_get_addr;
     }
+    else version (IBMZ_Any)
+    {
+        import ldc.intrinsics;
+        /// __tls_get_offset (available since GLibc 2.3) returns the thread pointer offset
+        /// of the request object.
+        /// IBM Z does not expose the `__tls_get_addr` function like other architectures.
+        extern(C) void* __tls_get_offset(size_t offset) nothrow @nogc;
+        // keep this function internal
+        private void* __tls_get_addr(tls_index* ti) nothrow @nogc
+        {
+            // adapted from GDC's assembler routine: libphobos/libdruntime/config/systemz/get_tls_offset.S
+            size_t got_offset = cast(size_t)ti;
+            // got_offset = &ti - &got (stored in r12)
+            asm pure nothrow @nogc {
+                "sgr %0, %%r12" : "=r" (got_offset) : "0" (got_offset);
+            }
+            // the offset is relative to the thread pointer base
+            // we need to add that to get the final address
+            return __tls_get_offset(got_offset) + cast(size_t)llvm_thread_pointer();
+        }
+    }
     else
         extern(C) void* __tls_get_addr(tls_index* ti) nothrow @nogc;
 }
@@ -1217,6 +1239,8 @@ else version (PPC64)
 else version (MIPS_Any)
     enum TLS_DTV_OFFSET = 0x8000;
 else version (LoongArch64)
+    enum TLS_DTV_OFFSET = 0x0;
+else version (IBMZ_Any)
     enum TLS_DTV_OFFSET = 0x0;
 else
     static assert( false, "Platform not supported." );
