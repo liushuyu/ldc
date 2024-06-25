@@ -705,6 +705,79 @@ CSYM(fiber_trampoline):
         // fiber_entryPoint never returns
         bl CSYM(fiber_entryPoint)
         .cfi_endproc
+
+#elif defined(__s390x__)
+/************************************************************************************
+ * SystemZ (S390X) ASM BITS
+ ************************************************************************************/
+
+// Note: Does not support S390 systems, only S390X systems are covered.
+/**
+ * Performs a context switch.
+ *
+ * Parameters:
+ * r2 - void** - ptr to old stack pointer
+ * r3 - void*  - new stack pointer
+ *
+ */
+
+.text
+.globl fiber_switchContext
+.type  fiber_switchContext, %function
+    .cfi_startproc
+    .machinemode zarch
+
+	aghi	%r15,-160
+
+    // Save the floating point control register
+	stfpc	   0(%r15)
+
+	// Save callee-saved floating point registers
+	std	%f8,   8(%r15)
+	std	%f9,  16(%r15)
+	std	%f10, 24(%r15)
+	std	%f11, 32(%r15)
+	std	%f12, 40(%r15)
+	std	%f13, 48(%r15)
+	std	%f14, 56(%r15)
+	std	%f15, 64(%r15)
+
+    // Save return address
+    stg %r14, 72(%r15)
+
+    /* Save the call-saved general purpose registers.  */
+	stmg	%r6,%r13,80(%r15)
+
+    aghi    %r15,80
+	/* Save stack pointer */
+	stg	    %r15,0(%r2)
+
+	/* Load the new context pointer as stack pointer.  */
+	lgr	    %r15,%r3
+    aghi    %r15,-80
+
+	/* Restore the call-saved GPRs from the new context.  */
+	lmg	%r6, %r13, 80(%r15)
+
+	/* Load the floating point control register.  */
+	lfpc	   0(%r15)
+
+	/* Restore call-saved floating point registers.  */
+	ld	%f8,   8(%r15)
+	ld	%f9,  16(%r15)
+	ld	%f10, 24(%r15)
+	ld	%f11, 32(%r15)
+	ld	%f12, 40(%r15)
+	ld	%f13, 48(%r15)
+	ld	%f14, 56(%r15)
+	ld	%f15, 64(%r15)
+
+	/* Restore PC - the location where we will jump to at the end.  */
+	lg	 %r14, 72(%r15)
+    aghi %r15, 160
+    br   %r14
+    .cfi_endproc
+
 #elif defined(__arm__) && (defined(__ARM_EABI__) || defined(__APPLE__))
 /************************************************************************************
  * ARM ASM BITS

@@ -170,6 +170,14 @@ private
             version = AlignFiberStackTo16Byte;
         }
     }
+    else version (SystemZ)
+    {
+        version (Posix)
+        {
+            version = AsmSystemZ_Posix;
+            version = AsmExternal;
+        }
+    }
 
     version (Posix)
     {
@@ -1897,6 +1905,28 @@ private:
             pstack -= size_t.sizeof * 10;    // skip past space reserved for $r22-$r31
             push(cast(size_t) &fiber_trampoline); // see threadasm.S for docs
             pstack += size_t.sizeof;         // adjust sp (newp) above lr
+        }
+        else version (AsmSystemZ_Posix) {
+            // Like others, FP registers and return address (%r14) are kept
+            // below the saved stack top (tstack) to hide from GC scanning.
+            // fiber_switchContext expects newp sp to look like this:
+            //    7: %r13
+            //    6: %r12
+            //   ...
+            //    0: %r6 <-- newp tstack
+            //   -1: %r14  (return address)  [&fiber_entryPoint]
+            //   -2: %f8
+            //   ...
+            //   -8: %f14
+
+            version (StackGrowsDown) {}
+            else
+                static assert(false, "Only full descending stacks supported on SystemZ");
+            
+            pstack -= size_t.sizeof * 8;    // skip past space reserved for %r6-%r13
+            push(cast(size_t) &fiber_entryPoint);
+            pstack += size_t.sizeof;        // adjust sp (newp) above %r14
+
         }
         else version (AsmAArch64_Posix)
         {
