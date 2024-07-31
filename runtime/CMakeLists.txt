@@ -149,6 +149,10 @@ if("${C_SYSTEM_LIBS}" STREQUAL "AUTO")
 else()
     set(C_SYSTEM_LIBS_SHARED ${C_SYSTEM_LIBS})
 endif()
+if(LDC_PHOBOS_USE_SYSTEM_ZLIB)
+    list(APPEND C_SYSTEM_LIBS ZLIB::ZLIB)
+    list(APPEND C_SYSTEM_LIBS_SHARED ZLIB::ZLIB)
+endif()
 
 message(STATUS "-- LDC runtime configuration:")
 message(STATUS "--  - Building 32/64-bit libraries (MULTILIB): ${MULTILIB}")
@@ -262,6 +266,10 @@ if(PHOBOS2_DIR)
 	    append("-DHAVE_UNISTD_H" CMAKE_C_FLAGS)
 	endif()
     endif()
+endif()
+if(LDC_PHOBOS_USE_SYSTEM_ZLIB)
+    # filter out zlib C parts if system zlib is used
+    list(FILTER PHOBOS2_C EXCLUDE REGEX ".*/etc/c/zlib/.*\\.c")
 endif()
 
 #
