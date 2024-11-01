@@ -35,8 +35,8 @@ using llvm::APFloat;
 using llvm::APInt;
 using llvm::IRBuilder;
 
-#define GET_INTRINSIC_DECL(_X)                                                 \
-  (llvm::Intrinsic::getDeclaration(&gIR->module, llvm::Intrinsic::_X))
+#define GET_INTRINSIC_DECL(_X, _TY)                                              \
+  (llvm::Intrinsic::getDeclaration(&gIR->module, llvm::Intrinsic::_X, _TY))
 
 // shortcuts for the common llvm types
 
