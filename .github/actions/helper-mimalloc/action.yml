@@ -12,7 +12,7 @@ runs:
         cd ..
 
         curl -fL --retry 3 --max-time 60 -o mimalloc.tar.gz \
-          https://github.com/microsoft/mimalloc/archive/refs/tags/$(cat ldc/packaging/mimalloc_version).tar.gz
+          https://github.com/microsoft/mimalloc/archive/e7198ce3977f26716c014819df92d48b6058f569.tar.gz
         mkdir mimalloc
         tar -xf mimalloc.tar.gz --strip 1 -C mimalloc
 
