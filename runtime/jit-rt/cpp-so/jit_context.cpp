@@ -18,6 +18,7 @@
 
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ExecutionEngine/JITLink/EHFrameSupport.h"
+#include "llvm/Support/CodeGen.h"
 #if LDC_LLVM_VER >= 2000 && defined(LDC_JITRT_USE_JITLINK)
 #include "llvm/ExecutionEngine/Orc/EHFrameRegistrationPlugin.h"
 #endif
@@ -136,6 +137,11 @@ static llvm::orc::LLJITBuilder buildLLJITforLDC() {
 std::unique_ptr<DynamicCompilerContext>
 DynamicCompilerContext::Create(bool isMainContext) {
   auto builder = buildLLJITforLDC();
+#ifdef LDC_JITRT_USE_JITLINK
+  // PIC is needed when using JITLink to avoid linkage errors
+  builder.JTMB->setRelocationModel(llvm::Reloc::PIC_);
+  builder.JTMB->setCodeModel(llvm::CodeModel::Large);
+#endif
   auto TM = cantFail(builder.JTMB->createTargetMachine());
   // std::make_unique is unusable here because it does not work when the
   // target class constructor is private
