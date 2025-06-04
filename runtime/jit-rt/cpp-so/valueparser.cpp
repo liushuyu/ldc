@@ -64,7 +64,7 @@ getBool(llvm::LLVMContext &context, const void *data, llvm::Type &type,
   if (auto ret = callOverride(override, type, val, errHandler)) {
     return ret;
   }
-  return llvm::ConstantInt::get(context, llvm::APInt(1, (val ? 1 : 0), true));
+  return llvm::ConstantInt::get(context, llvm::APInt(1, (val ? 1 : 0), false));
 }
 
 template <typename T>
