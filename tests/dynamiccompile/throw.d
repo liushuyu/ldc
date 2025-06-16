@@ -4,7 +4,6 @@
 // XFAIL: Windows
 //
 // Also, some issue on macOS Arm64
-// XFAIL: host_Darwin_AArch64
 // RUN: %ldc -enable-dynamic-compile -run %s
 
 import std.exception;
