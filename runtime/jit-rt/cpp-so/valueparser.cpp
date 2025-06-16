@@ -77,7 +77,9 @@ getInt(llvm::LLVMContext &context, const void *data, llvm::Type &type,
   if (auto ret = callOverride(override, type, val, errHandler)) {
     return ret;
   }
-  return llvm::ConstantInt::get(context, llvm::APInt(sizeof(T) * 8, val, true));
+  constexpr const bool isSigned = std::is_signed<T>::value;
+  return llvm::ConstantInt::get(context,
+                                llvm::APInt(sizeof(T) * 8, val, isSigned));
 }
 
 template <typename T>
